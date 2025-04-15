@@ -1,0 +1,33 @@
+{
+  "scripts": {
+    "dev": "vite --open --port 3000",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mongodb": "^6.15.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "vite": "^6.2.6"
+  },
+  "name": "goodbites",
+  "version": "1.0.0",
+  "description": "user guide to run GoodBites\r testing",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyenvubach/GoodBites.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nguyenvubach/GoodBites/issues"
+  },
+  "homepage": "https://github.com/nguyenvubach/GoodBites#readme"
+}

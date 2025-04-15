@@ -11,27 +11,16 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
+        <Navbar /> {/* This will appear on every page */}
         <Routes>
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route
-            path="/*"
-            element={
-              <>
-                <Navbar />
-                <Routes>
-                  <Route path="/home" element={<WelcomePage />} />
-                  <Route path="/search" element={<SearchPage />} />
-                  <Route path="/about" element={<AboutUs />} />
-                  <Route path="*" element={<Navigate to="/home" replace />} />
-                </Routes>
-              </>
-            }
-          />
+          <Route path="/home" element={<WelcomePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
     </Router>
   );
 }
-
-export default App;
