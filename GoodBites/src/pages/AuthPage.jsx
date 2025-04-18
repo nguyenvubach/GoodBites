@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
@@ -9,17 +9,52 @@ function AuthPage() {
     password: '',
     name: ''
   });
+
+  
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Form validation
+
     if (!formData.email || !formData.password || (!isLogin && !formData.name)) {
       alert('Please fill in all fields');
       return;
     }
-    // TODO: Implement authentication logic
-    console.log('Form submitted:', formData);
+
+    try {
+      const endpoint = isLogin ? 'login' : 'register';
+
+      const response = await fetch(`http://localhost:5000/api/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        console.log(isLogin ? 'Logged in user:' : 'Newly registered user:', data.user);
+
+        if (isLogin) {
+          // Redirect to the welcome page after successful login
+          navigate('/welcome');
+        } else {
+          setIsLogin(true); // Switch to login mode after successful registration
+        }
+      } else {
+        alert(data.message || 'Something went wrong');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Server error or cannot connect');
+    }
   };
 
   const handleChange = (e) => {
