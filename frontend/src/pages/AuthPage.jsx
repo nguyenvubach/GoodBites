@@ -1,26 +1,86 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import  {apiUrl} from '../utils/constants'
 
 function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: ''
+    lastname: '',
+    firstname: ''
   });
+  const [errorSuccessMsg, setErrorSuccessMsg] = useState('')
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Form validation
-    if (!formData.email || !formData.password || (!isLogin && !formData.name)) {
+    if (!formData.email || !formData.password || (!isLogin && !formData.lastname) || (!isLogin && !formData.firstname)) {
       alert('Please fill in all fields');
-      return;
+      return; 
     }
     // TODO: Implement authentication logic
     console.log('Form submitted:', formData);
+    if (!isLogin) {
+      signupAuth()
+    }else {
+      loginAuth()
+    }
   };
+  //Signup auth
+  const signupAuth = async ()=>{
+    console.log(apiUrl)
+    try {
+      const response = await fetch(`${apiUrl}auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+        console.log('registration succussfull:', data)
+      
+        //only proceed if registration is successfull
+        setTimeout(() => {
+          setIsLogin(true)
+        }, 2000);
+    } catch (error) {
+      console.log('server error',error)
+    }
+  }
+  //login auth
+  const loginAuth = async ()=>{
+    try {
+      const response = await fetch(`${apiUrl}auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email:formData.email,
+          password:formData.password
+        }),
+      })
+      // if (!response.ok){
+      //   throw new Error(`HttP error! status: ${response.status}`)
+      // }
+
+      const data = await response.json()
+      console.log('Login succussfull:', data)
+      localStorage.setItem('userData', JSON.stringify(data))
+      
+        //only proceed if registration is successfull
+        setTimeout(() => {
+          navigate('/search')
+        }, 300);
+    } catch (error) {
+      console.error('Login error:', error)
+    }
+  }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -50,17 +110,30 @@ function AuthPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
+            <>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                name="name"
-                placeholder="Full Name"
-                value={formData.name}
+                name="lastname"
+                placeholder="Lastname"
+                value={formData.lastname}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               />
             </div>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                name="firstname"
+                placeholder="firstname"
+                value={formData.firstname}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              />
+            </div>
+            </>
           )}
 
           <div className="relative">
@@ -114,6 +187,7 @@ function AuthPage() {
             </button>
           </p>
         </div>
+        <span>{errorSuccessMsg}</span>
       </div>
     </div>
   );

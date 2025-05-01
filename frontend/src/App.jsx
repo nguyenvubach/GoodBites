@@ -6,6 +6,7 @@ import WelcomePage from './pages/WelcomePage';
 import SearchPage from './pages/SearchPage';
 import AboutUs from './pages/AboutUs';
 import AuthPage from './pages/AuthPage';
+import ProtectedPages from './pages/ProtectedPages';
 
 function App() {
   return (
@@ -21,7 +22,10 @@ function App() {
                 <Navbar />
                 <Routes>
                   <Route path="/home" element={<WelcomePage />} />
+                  <Route element={<ProtectedPages/>} >
                   <Route path="/search" element={<SearchPage />} />
+                  </Route>
+                  {/* <Route path="/search" element={<SearchPage />} /> */}
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="*" element={<Navigate to="/home" replace />} />
                 </Routes>

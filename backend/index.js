@@ -11,7 +11,9 @@ const app = express();
 
 app.use(express.urlencoded({extended:true}))
 app.use(express.json());
-app.use(cors())
+app.use(cors({
+  origin:'http://localhost:5173'
+}))
 
 
 // Connect to MongoDB
@@ -24,5 +26,6 @@ mongoose
   app.use('/api/search', searchRoute)
 
   app.get('/api', (req, res)=> res.send('Welcome to Home page'))
+
 
   app.listen(5000, ()=> console.log(`App running on localhost:5000`))

@@ -1,29 +1,46 @@
 import express from 'express';
 import SearchHistory from '../models/SearchHistory.js';
-import {verifyTokenAndAuthorization} from '../middlewares/verifyToken.js'
+import {verifyToken, verifyTokenAndAuthorization} from '../middlewares/verifyToken.js'
 import {VertexAI} from '@google-cloud/vertexai'
 
 const router = express.Router();
 
-router.post('/', verifyTokenAndAuthorization, async (req, res) =>{
-    const prompt = req.body.prompt;
-    const projectId ='goodbites';
+router.post('/ai', async (req, res) =>{
+    const prompt = req.body.prompt.trim();
+    const projectId ='good-bites-458200';
+    // async function generate_from_text_input() {
+    //     const vertexAI = new VertexAI({
+    //       project: 'good-bites-458200',
+    //       location: 'us-central1',
+    //     });
+      
+    //     const generativeModel = vertexAI.getGenerativeModel({
+    //       model: 'gemini-2.0-flash-001',
+    //     });
+      
+    //     const prompt =
+    //       "What's a good name for a flower shop that specializes in selling bouquets of dried flowers?";
+      
+    //     const resp = await generativeModel.generateContent(prompt);
+    //     const contentResponse = await resp.response;
+    //     console.log(JSON.stringify(contentResponse));
+    //   }
+    //   generate_from_text_input()
 
-    try {
+    console.log('Reached')
+
         const vertexAI = new VertexAI({
             project:projectId,
-            location:'us-centrali',
+            location:'us-central1',
         })
         const generativeModel = vertexAI.getGenerativeModel({
             model: 'gemini-2.0-flash-001',
         });
+
         const resp = await generativeModel.generateContent(prompt);
-        const contentRespone = await resp.response
-        res.status(200).send(contentRespone)
-    } catch (error) {
-        console.log(error)
-        res.status(200).send(error)
-    }
+        const contentResponse = await resp.response
+        res.status(200).send(contentResponse)
+  
 })
 
 //FETCH SEARCH HISTORY
@@ -46,12 +63,12 @@ try {
 });
 
 //UPDATE SEARCH HisToRY
-router.patch('/', verifyTokenAndAuthorization, async(req, res)=> {
+router.patch('/', async(req, res)=> {
     try {
         // Get email from authenticated user
-        const userEmail = req.user.email
+        const userEmail = req.body.email
 
-        const newSearchTerm = req.body.searchHistory;
+        const newSearchTerm = req.body.prompt;
         if (!newSearchTerm || typeof newSearchTerm !== 'string') {
             return res.status(400).send('Valid searchHistory string is required')
         }

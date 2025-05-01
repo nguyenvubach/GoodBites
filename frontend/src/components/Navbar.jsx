@@ -2,7 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search, User, Info } from 'lucide-react';
 
+
 function Navbar() {
+  const user = JSON.parse(localStorage.getItem('userData'))
+
+ const handleLogout = ()=> {
+  localStorage.removeItem('userData')
+  window.location.reload()
+ }
+
+
   return (
     <nav className="bg-green-600 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,13 +29,23 @@ function Navbar() {
               <Info size={20} />
               <span>About Us</span>
             </Link>
-            <Link 
+           {user ?
+           <>
+            <div className="flex items-center space-x-1 hover:text-green-200"><span>{user.firstname}</span></div>
+            <button className="flex items-center space-x-1 bg-green-700 px-4 py-2 rounded-lg hover:bg-green-800 transition-colors"
+            onClick={handleLogout} >
+              <span>   Logout</span>
+            </button>
+            </>
+         :  <Link 
               to="/auth" 
               className="flex items-center space-x-1 bg-green-700 px-4 py-2 rounded-lg hover:bg-green-800 transition-colors"
             >
               <User size={20} />
               <span>Login</span>
             </Link>
+             }
+            
           </div>
         </div>
       </div>
