@@ -1,135 +1,214 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { apiUrl } from '../utils/constants';
-import {marked} from 'marked'
-import dompurify from 'dompurify'
-
-
-// Mock data for demonstration
-// const mockProducts = [
-//   {
-//     id: 1,
-//     name: "Organic Granola",
-//     brand: "Nature's Best",
-//     healthScore: 85,
-//     category: "Breakfast Cereals",
-//     image: "https://images.unsplash.com/photo-1517093702855-a3c7966b8417?auto=format&fit=crop&q=80&w=400"
-//   },
-//   {
-//     id: 2,
-//     name: "Whole Grain Crackers",
-//     brand: "HealthyBite",
-//     healthScore: 75,
-//     category: "Snacks",
-//     image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80&w=400"
-//   }
-// ];
+import { marked } from 'marked';
+import dompurify from 'dompurify';
 
 function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  // const [products] = useState(mockProducts);
-  const [aiResponse, setAiResponse] = useState('') 
-  const [loading, setLoading] = useState(false)
+  const [aiResponse, setAiResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const searchRef = useRef(null);
 
+  const Token = JSON.parse(localStorage.getItem('userData'))?.accessToken;
+  const email = JSON.parse(localStorage.getItem('userData'))?.email;
+  const userId = JSON.parse(localStorage.getItem('userData'))?._id;
 
-  const Token = JSON.parse(localStorage.getItem('userData'))?.accessToken
-  const email = JSON.parse(localStorage.getItem('userData'))?.email
+  const fetchSearchHistory = async () => {
+    try {
+      const response = await fetch(`${apiUrl}search/history/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token: `Bearer ${Token}`
+        },
+        body: JSON.stringify({
+          email,
+        })
+      });
+      const data = await response.json();
 
-  const handleSearch = async()=> {
-    if (searchTerm === '') return; 
-        try {
-          setLoading(true)
-          const response = await fetch(`${apiUrl}search/ai`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              token: `Bearer ${Token}`
-            },
-            body: JSON.stringify({
-              prompt: searchTerm
-            })
-          })
-     
-          const data = await response.json()
-          if (data) {
-            
-     
-          console.log('Search succussfull:', data)
-          const respText = data?.candidates[0].content.parts[0].text
-          const markeResponnse = marked(respText)
-          const sanitizedText = dompurify.sanitize(markeResponnse)
-
-          setAiResponse(sanitizedText)
-          setLoading(false)
-        
-        
-                  const saveHistoryToDb = await fetch(`${apiUrl}search`, {
-                    method: 'PATCH',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      token: `Bearer ${Token}`
-                    },
-                    body: JSON.stringify({
-                      prompt: searchTerm,
-                      email
-                    })
-                  })
-                  const savedData = await saveHistoryToDb.json()
-                  console.log("UpdatedsearchHistory", savedData)
-          }
-    
-        } catch (error) {
-          console.error('Search error:', error)
-          setLoading(false)
-        }
+      if (data && data.searchHistory) {
+        // Sort history by timestamp (newest first)
+        const sortedHistory = data.searchHistory.sort((a, b) =>
+          new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        console.log('Fetched search history:', sortedHistory);
+        setSearchHistory(sortedHistory);
       }
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+    }
+  };
+  // Fetch search history on component mount
+  useEffect(() => {
+    if (!Token || !email) return;
+    const fetchSearchHistory = async () => {
+      try {
+        const response = await fetch(`${apiUrl}search/history/${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            token: `Bearer ${Token}`
+          },
+          body: JSON.stringify({
+            email,
+          })
+        });
+        const data = await response.json();
+
+        if (data && data.searchHistory) {
+          // Sort history by timestamp (newest first)
+          const sortedHistory = data.searchHistory.sort((a, b) =>
+            new Date(b.timestamp) - new Date(a.timestamp)
+          );
+          console.log('Fetched search history:', sortedHistory);
+          setSearchHistory(sortedHistory);
+        }
+      } catch (error) {
+        console.error('Error fetching search history:', error);
+      }
+    };
+
+    if (Token && email) {
+      fetchSearchHistory();
+    }
+  }, [Token, email])
+  // Handle click outside to close history
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowHistory(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleSearch = async () => {
+    if (searchTerm.trim() === '') return;
+
+    try {
+      setLoading(true);
+      setShowHistory(false);
+
+      const response = await fetch(`${apiUrl}search/ai`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token: `Bearer ${Token}`
+        },
+        body: JSON.stringify({
+          prompt: searchTerm
+        })
+      });
+
+      const data = await response.json();
+      if (data) {
+        console.log('Search successful:', data);
+        const respText = data?.candidates[0].content.parts[0].text;
+        const markeResponnse = marked(respText);
+        const sanitizedText = dompurify.sanitize(markeResponnse);
+        setAiResponse(sanitizedText);
+        setLoading(false);
+
+// Save to database
+        const saveHistoryToDb = await fetch(`${apiUrl}search/history`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            token: `Bearer ${Token}`
+          },
+          body: JSON.stringify({
+            prompt: searchTerm,
+            email,
+          })
+        });
+        const savedData = await saveHistoryToDb.json();
+        console.log("Updated searchHistory", savedData);
+        setSearchTerm('');
+        // Update local search history
+        fetchSearchHistory();
+
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8 flex justify-center gap-2">
-        <div className="relative max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Search for a food product..."
-            className="w-full px-4 py-3 pl-12 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+        <div className="relative flex-1" ref={searchRef}>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search for a food product..."
+              className="w-full px-4 py-3 pl-12 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowHistory(true)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+
+          {/* Search history dropdown */}
+          {showHistory && searchHistory.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div className="px-4 py-2 text-sm text-gray-500 border-b">Recent searches</div>
+              <ul className="max-h-48 overflow-y-scroll">
+                {searchHistory.map((item, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    onClick={() => {
+                      setSearchTerm(item);
+                      setShowHistory(false);
+                    }}
+                  >
+                    <Search className="mr-2 text-gray-400" size={16} />
+                    {item.query}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+
         <button
-        className=' px-4 py-2 bg-green-800'
-         onClick={handleSearch}>Search</button>
+          className="px-6 py-3 bg-green-600 text-white text-lg font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          onClick={handleSearch}
+        >
+          Search
+        </button>
       </div>
 
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-            <img src={product.image} alt={product.name} className="w-full h-48 object-cover" />
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-500">{product.brand}</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  product.healthScore >= 80 ? 'bg-green-100 text-green-800' :
-                  product.healthScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  Score: {product.healthScore}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-1">{product.name}</h3>
-              <p className="text-sm text-gray-600">{product.category}</p>
+      {/* Chat-style response box */}
+      <div className="max-w-2xl mx-auto">
+        {loading ? (
+          <div className="bg-gray-100 p-4 rounded-lg flex justify-center">
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce"></div>
+              <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
             </div>
           </div>
-        ))}
-      </div> */}
-
-     {loading ? <h1 className="">Loading</h1> : <div className="p-2"
-        dangerouslySetInnerHTML={{__html: aiResponse}}
-      />}
-
+        ) : aiResponse && (
+          <div
+            className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4"
+            dangerouslySetInnerHTML={{ __html: aiResponse }}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
-export default SearchPage;
+export default SearchPage;

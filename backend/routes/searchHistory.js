@@ -27,7 +27,7 @@ router.post('/ai', async (req, res) =>{
     //   }
     //   generate_from_text_input()
 
-    console.log('Reached')
+
 
         const vertexAI = new VertexAI({
             project:projectId,
@@ -45,11 +45,11 @@ router.post('/ai', async (req, res) =>{
 
 //FETCH SEARCH HISTORY
 
-router.get('/:id', verifyTokenAndAuthorization, async(req, res)=> {
+router.post('/history/:id', async(req, res)=> {
 try {
     //Get email from the authenticated user
     const fetchedUserSearchHistory = await SearchHistory.findOne({
-        email:req.user.email,
+        email:req.body.email,
     });
     
     if (!fetchedUserSearchHistory) {
@@ -63,7 +63,7 @@ try {
 });
 
 //UPDATE SEARCH HisToRY
-router.patch('/', async(req, res)=> {
+router.patch('/history',async(req, res)=> {
     try {
         // Get email from authenticated user
         const userEmail = req.body.email
